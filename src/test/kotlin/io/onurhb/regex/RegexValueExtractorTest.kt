@@ -3,9 +3,11 @@ package io.onurhb.regex
 import io.onurhb.regex.RegexValueExtractor.extractValues
 import io.onurhb.regex.RegexValueExtractor.getClosingBracketIndex
 import io.onurhb.regex.RegexValueExtractor.getClosingParenthesesIndex
+import io.onurhb.regex.RegexValueExtractor.replaceFirstGroupElseDefault
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 
 internal class RegexValueExtractorTest {
 
@@ -15,6 +17,25 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "ignore-a",
+            extractValues(template, matchGroups)
+        )
+    }
+
+    @Test
+    fun `extractValues ignores escaped parentheses`() {
+        val template = "ignore\\(-{p9})"
+
+        assertThrows<IllegalArgumentException> {
+            extractValues(template, matchGroups)
+        }
+    }
+
+    @Test
+    fun `extractValues ignores escaped brackets`() {
+        val template = "ignore\\(-\\{p9})"
+
+        assertEquals(
+            "ignore\\(-\\{p9})",
             extractValues(template, matchGroups)
         )
     }
@@ -40,6 +61,46 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "ignore",
+            extractValues(template, matchGroups)
+        )
+    }
+
+    @Test
+    fun `extractValues extracts correctly when there are multiple parameters`() {
+        val template = "ignore-{p9|p0}"
+
+        assertEquals(
+            "ignore-a",
+            extractValues(template, matchGroups)
+        )
+    }
+
+    @Test
+    fun `extractValues extracts correctly when there are multiple parameters when last has default`() {
+        val template = "ignore-{p9|p10:default0}"
+
+        assertEquals(
+            "ignore-default0",
+            extractValues(template, matchGroups)
+        )
+    }
+
+    @Test
+    fun `extractValues extracts correctly when there are optional of multiple parameters`() {
+        val template = "ignore(-{p9|p10})"
+
+        assertEquals(
+            "ignore",
+            extractValues(template, matchGroups)
+        )
+    }
+
+    @Test
+    fun `extractValues extracts correctly when there are optional of multiple parameters with last default`() {
+        val template = "ignore(-{p9|p10:default})"
+
+        assertEquals(
+            "ignore-default",
             extractValues(template, matchGroups)
         )
     }
@@ -155,6 +216,34 @@ internal class RegexValueExtractorTest {
         assertNull(
             getClosingBracketIndex(input)
         )
+    }
+
+    @Test
+    fun `getFirstGroupElseDefault callbacks first parameter with default`() {
+        val parameters = mapOf(
+            "p9" to null,
+            "p8" to "default0"
+        )
+
+        val value = replaceFirstGroupElseDefault(parameters, matchGroups) { parameter, value ->
+            assertEquals("p8", parameter)
+            assertEquals("default0", value)
+            "value0"
+        }
+
+        assertEquals("value0", value)
+    }
+
+    @Test
+    fun `getFirstGroupElseDefault throws if all parameters are undefined`() {
+        val parameters = mapOf(
+            "p9" to null,
+            "p8" to null
+        )
+
+        assertThrows<Exception> {
+            replaceFirstGroupElseDefault(parameters, matchGroups) { _, value -> value }
+        }
     }
 
     companion object {
