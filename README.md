@@ -1,39 +1,39 @@
 # Regex Value Extractor
 You have a text that you want to match using regex and create a string from the result:
 ```
-    1992-1-3
+1992-1-3
 ```
 
 Following regex will match above text:
 
 ``` regexp
-    (?<year>\\d{4})-(?<month>\\d{1,2})(-(?<day>\\d{1,2}))?
+(?<year>\\d{4})-(?<month>\\d{1,2})(-(?<day>\\d{1,2}))?
 ```
 
 This library helps you to easily extract values and also transform them:
 
 ``` kotlin
-    fun main(args: Array<String>) {
-        val input = "1992-1-3"
-        val pattern = "(?<year>\\d{4})-(?<month>\\d{1,2})(-(?<day>\\d{1,2}))?".toRegex()
-        val match = pattern.matchEntire(input)!!
+fun main(args: Array<String>) {
+    val input = "1992-1-3"
+    val pattern = "(?<year>\\d{4})-(?<month>\\d{1,2})(-(?<day>\\d{1,2}))?".toRegex()
+    val match = pattern.matchEntire(input)!!
 
-        val result = RegexValueExtractor.extractValues(
-            template = "year: {year}, month: {month}( and maybe day: {day})",
-            groups = match.groups
-        ) { parameter, value ->
-            when {
-                parameter.equals("month").or(parameter.equals("day")) -> {
-                    if (value.length == 1) "0$value"
-                    else value
-                }
-                else -> value
+    val result = RegexValueExtractor.extractValues(
+        template = "year: {year}, month: {month}( and maybe day: {day})",
+        groups = match.groups
+    ) { parameter, value ->
+        when {
+            parameter.equals("month").or(parameter.equals("day")) -> {
+                if (value.length == 1) "0$value"
+                else value
             }
+            else -> value
         }
-
-        // prints: 'year: 1992, month: 01 and maybe day: 03'
-        println(result)
     }
+
+    // prints: 'year: 1992, month: 01 and maybe day: 03'
+    println(result)
+}
 ```
 
 Above code would produce following results:  
