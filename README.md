@@ -7,7 +7,7 @@ You have a text that you want to match using regex and create a string from the 
 Following regex will match above text:
 
 ``` regexp
-    (?<year>\\d{4})-(?<month>\\d{2})(-(?<day>\\d{2}))?
+    (?<year>\d{4})-(?<month>\d{2})(-(?<day>\d{2}))?
 ```
 
 This library helps you to easily extract values and also transform them:
