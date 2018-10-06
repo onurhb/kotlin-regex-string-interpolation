@@ -36,9 +36,7 @@ fun main(args: Array<String>) {
 }
 ```
 
-Above code would produce following results:  
-- `1992-01-13`: year: 1992, month: 01 and maybe day: 13
-- `1992-01`: year: 1992, month: 01
+_See tests for examples_
 
 # Usage
 You need to create a template which tells `RegexValueExtractor` what to extract:
