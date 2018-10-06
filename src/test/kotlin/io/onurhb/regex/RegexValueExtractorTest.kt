@@ -176,6 +176,16 @@ internal class RegexValueExtractorTest {
     }
 
     @Test
+    fun `extractValues return correct when there are multiple parameters with nested optional 2`() {
+        val template = "{p0}-{p1}(-{p3}(-{p9}))"
+
+        assertEquals(
+            "a-b-d",
+            extractValues(template, matchGroups)
+        )
+    }
+
+    @Test
     fun `getSubstringUntilNextClosingParentheses returns correct string 1`() {
         val input = "(text-(some) text))-some text()"
         assertEquals(
