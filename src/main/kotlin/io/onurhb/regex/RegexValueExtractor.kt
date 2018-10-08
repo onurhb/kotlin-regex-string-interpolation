@@ -2,26 +2,6 @@ package io.onurhb.regex
 
 import io.onurhb.regex.exception.ParameterNotFoundException
 
-fun main(args: Array<String>) {
-    val pattern = "(?<year>\\d{4})-(?<month>\\d{1,2})(-(?<day>\\d{1,2}))?".toRegex()
-
-    val match = pattern.matchEntire("1992-1-3")!!
-    val result = RegexValueExtractor.extractValues(
-        template = "year: {year}, month: {month}( and maybe day: {day})",
-        groups = match.groups
-    ) { parameter, value ->
-        if (parameter.equals("month").or(parameter.equals("day"))) {
-            if (value?.length == 1) "0$value"
-            else value
-        }
-        else value
-    }
-
-    // prints: 'year: 1992, month: 01 and maybe day: 03'
-    println(result)
-}
-
-
 object RegexValueExtractor {
     // Ignores escaped brackets
     private val bracketMatcher = "(?<!\\\\)([({])".toRegex()
