@@ -1,5 +1,27 @@
 package io.onurhb.regex
 
+import io.onurhb.regex.exception.ParameterNotFoundException
+
+fun main(args: Array<String>) {
+    val pattern = "(?<year>\\d{4})-(?<month>\\d{1,2})(-(?<day>\\d{1,2}))?".toRegex()
+
+    val match = pattern.matchEntire("1992-1-3")!!
+    val result = RegexValueExtractor.extractValues(
+        template = "year: {year}, month: {month}( and maybe day: {day})",
+        groups = match.groups
+    ) { parameter, value ->
+        if (parameter.equals("month").or(parameter.equals("day"))) {
+            if (value?.length == 1) "0$value"
+            else value
+        }
+        else value
+    }
+
+    // prints: 'year: 1992, month: 01 and maybe day: 03'
+    println(result)
+}
+
+
 object RegexValueExtractor {
     // Ignores escaped brackets
     private val bracketMatcher = "(?<!\\\\)([({])".toRegex()
@@ -11,7 +33,7 @@ object RegexValueExtractor {
     fun extractValues(
         template: String,
         groups: MatchGroupCollection,
-        process: (parameter: String, value: String) -> String = { _, value -> value }
+        process: (parameter: String, value: String?) -> String? = { _, value -> value }
     ): String {
         var result = template
         do {
@@ -25,7 +47,7 @@ object RegexValueExtractor {
         template: String,
         groups: MatchGroupCollection,
         optional: Boolean = false,
-        process: (parameter: String, value: String) -> String
+        process: (parameter: String, value: String?) -> String?
     ): String {
         val bracketMatched = bracketMatcher.find(template) ?: return template
         try {
@@ -47,7 +69,7 @@ object RegexValueExtractor {
         template: String,
         parenthesesStart: Int,
         groups: MatchGroupCollection,
-        process: (parameter: String, value: String) -> String
+        process: (parameter: String, value: String?) -> String?
     ): String {
         return getClosingParenthesesIndex(
             template.substring(
@@ -69,7 +91,7 @@ object RegexValueExtractor {
         template: String,
         parameterStart: Int,
         groups: MatchGroupCollection,
-        process: (parameter: String, value: String) -> String
+        process: (parameter: String, value: String?) -> String?
     ): String {
         return getClosingBracketIndex(
             template.substring(
@@ -98,21 +120,34 @@ object RegexValueExtractor {
                     parameter to default
                 }
 
-            replaceFirstGroupElseDefault(parameters, groups) { parameter, value ->
+
+            try {
+                replaceFirstGroupElseDefault(parameters, groups) { parameter, value ->
+                    template.replaceRange(
+                        parameterStart,
+                        offset + 1,
+                        process(parameter, value)!!
+                    )
+                }
+            } catch (ex: ParameterNotFoundException) {
+                // Give user another chance
+                val replc = process(ex.parameters.first(), null) ?: throw ex
+
                 template.replaceRange(
                     parameterStart,
                     offset + 1,
-                    process(parameter, value)
+                    replc
                 )
             }
+
         } ?: template
     }
 
     internal fun replaceFirstGroupElseDefault(
         parameters: Map<String, String?>,
         groups: MatchGroupCollection,
-        replace: (parameter: String, value: String) -> String
-    ): String {
+        replace: (parameter: String, value: String?) -> String?
+    ): String? {
         val undefinedParameters = mutableListOf<String>()
 
         for ((parameter, default) in parameters) {
@@ -121,12 +156,12 @@ object RegexValueExtractor {
                     parameter,
                     getGroupElseDefaultIfExists(parameter, groups, default)
                 )
-            } catch (ex: Exception) {
+            } catch (ex: IllegalArgumentException) {
                 undefinedParameters.add(parameter)
             }
         }
 
-        throw IllegalArgumentException("Could not find any of '$undefinedParameters' in groups")
+        throw ParameterNotFoundException(undefinedParameters)
     }
 
     private fun getGroupElseDefaultIfExists(

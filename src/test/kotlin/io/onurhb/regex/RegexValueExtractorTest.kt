@@ -44,13 +44,27 @@ internal class RegexValueExtractorTest {
     fun `extractValues extracts and transforms correctly`() {
         val template = "ignore(-{p0})"
         val result = extractValues(template, matchGroups) { parameter, value ->
+            if (parameter.equals("p0")) "processed"
+            else value
+        }
+        assertEquals(
+            "ignore-processed",
+            result
+        )
+    }
+
+    @Test
+    fun `extractValues extracts and transforms undefined parameters correctly`() {
+        val template = "ignore(-{p0})-{p9}"
+        val result = extractValues(template, matchGroups) { parameter, value ->
             when {
                 parameter.equals("p0") -> "processed"
+                parameter.equals("p9") -> "processed"
                 else -> value
             }
         }
         assertEquals(
-            "ignore-processed",
+            "ignore-processed-processed",
             result
         )
     }
