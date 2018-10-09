@@ -14,11 +14,11 @@ object RegexValueExtractor {
      * Interpolate string like '{p0}(-{p1:p2:*})' with values from Regex match
      */
     fun interpolateString(
-        template: String,
+        string: String,
         groups: MatchGroupCollection,
         process: (parameter: String, value: String?) -> String? = { _, value -> value }
     ): String {
-        var result = template
+        var result = string
         do {
             result = replaceNextParameter(result, groups, process = process).also {
                 if (result.equals(it)) return result
