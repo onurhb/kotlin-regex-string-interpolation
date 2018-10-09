@@ -27,4 +27,4 @@ _See tests for more examples_
 - Wrap group names with brackets: `{day}`
 - Wrap any optional substring with parentheses if it contains optional parameter(s), e.g. `(maybe day: {day})` will erase everything inside the parentheses if `{day}` is not matched
 - Default if a parameter is not found `{day:01}`, will output `01` if `{day}` is not matched
-- Multiplate parameters with `|` separator, such as `{day:anotherday}`, will try to find `day` first
+- Multiple parameters with `|` separator, such as `{day|anotherday}`, will try to find `day` first
