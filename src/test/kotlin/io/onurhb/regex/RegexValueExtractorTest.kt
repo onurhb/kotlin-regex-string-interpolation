@@ -1,11 +1,8 @@
 package io.onurhb.regex
 
-import io.onurhb.regex.RegexValueExtractor.extractValues
-import io.onurhb.regex.RegexValueExtractor.getClosingBracketIndex
-import io.onurhb.regex.RegexValueExtractor.getClosingParenthesesIndex
-import io.onurhb.regex.RegexValueExtractor.replaceFirstGroupElseDefault
+import io.onurhb.regex.RegexValueExtractor.interpolateString
+import io.onurhb.regex.exception.ParameterNotFoundException
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
@@ -17,7 +14,7 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "ignore-a",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
@@ -25,8 +22,8 @@ internal class RegexValueExtractorTest {
     fun `extractValues ignores escaped parentheses`() {
         val template = "ignore\\(-{p9})"
 
-        assertThrows<IllegalArgumentException> {
-            extractValues(template, matchGroups)
+        assertThrows<ParameterNotFoundException> {
+            interpolateString(template, matchGroups)
         }
     }
 
@@ -36,15 +33,15 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "ignore\\(-\\{p9})",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
     @Test
     fun `extractValues extracts and transforms correctly`() {
         val template = "ignore(-{p0})"
-        val result = extractValues(template, matchGroups) { parameter, value ->
-            if (parameter.equals("p0")) "processed"
+        val result = interpolateString(template, matchGroups) { parameter, value ->
+            if (parameter.equals("p0")) null
             else value
         }
         assertEquals(
@@ -55,16 +52,68 @@ internal class RegexValueExtractorTest {
 
     @Test
     fun `extractValues extracts and transforms undefined parameters correctly`() {
-        val template = "ignore(-{p0})-{p9}"
-        val result = extractValues(template, matchGroups) { parameter, value ->
+        val template = "ignore-{p0:*}"
+        val result = interpolateString(template, matchGroups) { parameter, value ->
+            if (parameter.equals("p0")) null
+            else value
+        }
+        assertEquals(
+            "ignore-*",
+            result
+        )
+    }
+
+    @Test
+    fun `extractValues extracts and transforms undefined parameters correctly 2`() {
+        val template = "ignore-{p0:*}"
+        val result = interpolateString(template, matchGroups) { parameter, value ->
+            if (parameter.equals("p0")) "processed"
+            else value
+        }
+        assertEquals(
+            "ignore-processed",
+            result
+        )
+    }
+
+    @Test
+    fun `extractValues extracts and transforms undefined parameters correctly 3`() {
+        val template = "ignore-{p9|p0:*}"
+        val result = interpolateString(template, matchGroups) { parameter, value ->
+            if (parameter.equals("p0")) "processed"
+            else value
+        }
+        assertEquals(
+            "ignore-processed",
+            result
+        )
+    }
+
+    @Test
+    fun `extractValues extracts and transforms undefined parameters correctly 4`() {
+        val template = "ignore-{p9|p10:*}"
+        val result = interpolateString(template, matchGroups) { parameter, value ->
+            if (parameter.equals("p10") || parameter.equals("p9")) null
+            else value
+        }
+        assertEquals(
+            "ignore-*",
+            result
+        )
+    }
+
+    @Test
+    fun `extractValues extracts and transforms undefined parameters correctly 5`() {
+        val template = "ignore-{p9|p10:*}"
+        val result = interpolateString(template, matchGroups) { parameter, value ->
             when {
-                parameter.equals("p0") -> "processed"
-                parameter.equals("p9") -> "processed"
+                parameter.equals("p9") -> "p09"
+                parameter.equals("p10") -> "p010"
                 else -> value
             }
         }
         assertEquals(
-            "ignore-processed-processed",
+            "ignore-p09",
             result
         )
     }
@@ -75,7 +124,7 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "ignore",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
@@ -85,7 +134,7 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "ignore-a",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
@@ -95,7 +144,7 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "ignore-default0",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
@@ -105,7 +154,7 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "ignore",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
@@ -115,7 +164,7 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "ignore-default",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
@@ -125,7 +174,7 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "ignore",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
@@ -135,7 +184,7 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "ignore-a",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
@@ -145,7 +194,7 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
@@ -155,7 +204,7 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "a-b-c-d",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
@@ -165,7 +214,7 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "a-b-c",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
@@ -175,7 +224,7 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "a-b-c-d",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
@@ -185,7 +234,7 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "a-b",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
     }
 
@@ -195,79 +244,8 @@ internal class RegexValueExtractorTest {
 
         assertEquals(
             "a-b-d",
-            extractValues(template, matchGroups)
+            interpolateString(template, matchGroups)
         )
-    }
-
-    @Test
-    fun `getSubstringUntilNextClosingParentheses returns correct string 1`() {
-        val input = "(text-(some) text))-some text()"
-        assertEquals(
-            17,
-            getClosingParenthesesIndex(input)
-        )
-    }
-
-    @Test
-    fun `getSubstringUntilNextClosingParentheses returns correct string 2`() {
-        val input = "(text-(some) t)ext))"
-        assertEquals(
-            14,
-            getClosingParenthesesIndex(input)
-        )
-    }
-
-    @Test
-    fun `getSubstringUntilNextClosingParentheses returns null if closing parentheses is not found`() {
-        val input = "(text-(some) text"
-        assertNull(
-            getClosingParenthesesIndex(input)
-        )
-    }
-
-    @Test
-    fun `getClosingBracketIndex should return correct index`() {
-        val input = "{param0}"
-        assertEquals(
-            7,
-            getClosingBracketIndex(input)
-        )
-    }
-
-    @Test
-    fun `getClosingBracketIndex should return null if not found`() {
-        val input = "{param0"
-        assertNull(
-            getClosingBracketIndex(input)
-        )
-    }
-
-    @Test
-    fun `getFirstGroupElseDefault callbacks first parameter with default`() {
-        val parameters = mapOf(
-            "p9" to null,
-            "p8" to "default0"
-        )
-
-        val value = replaceFirstGroupElseDefault(parameters, matchGroups) { parameter, value ->
-            assertEquals("p8", parameter)
-            assertEquals("default0", value)
-            "value0"
-        }
-
-        assertEquals("value0", value)
-    }
-
-    @Test
-    fun `getFirstGroupElseDefault throws if all parameters are undefined`() {
-        val parameters = mapOf(
-            "p9" to null,
-            "p8" to null
-        )
-
-        assertThrows<Exception> {
-            replaceFirstGroupElseDefault(parameters, matchGroups) { _, value -> value }
-        }
     }
 
     companion object {
