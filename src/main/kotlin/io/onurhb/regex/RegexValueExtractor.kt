@@ -20,16 +20,16 @@ object RegexValueExtractor {
     ): String {
         var result = string
         do {
-            result = replaceNextParameter(result, groups, process = process).also {
+            result = recursivelyInterpolateString(result, groups, process = process).also {
                 if (result.equals(it)) return result
             }
         } while (true)
     }
 
     /**
-     * Will replace the next parameter in '{p0}-{p1}' (which is 'p0')
+     * Will recursively interpolate content in parentheses
      */
-    private fun replaceNextParameter(
+    private fun recursivelyInterpolateString(
         template: String,
         groups: MatchGroupCollection,
         optional: Boolean = false,
@@ -43,7 +43,7 @@ object RegexValueExtractor {
                 return if (match.equals(PARENTHESES_OPEN.toString())) {
                     handleParentheses(template, matchStart, groups, process)
                 } else {
-                    replaceNextParameter(template, matchStart, groups, process)
+                    recursivelyInterpolateString(template, matchStart, groups, process)
                 }
             }
         } catch (ex: ParameterNotFoundException) {
@@ -75,7 +75,7 @@ object RegexValueExtractor {
             template.replaceRange(
                 parenthesesStart,
                 offset + 1,
-                replaceNextParameter(substring, groups, optional = true, process = process)
+                recursivelyInterpolateString(substring, groups, optional = true, process = process)
             )
         } ?: template
     }
@@ -88,7 +88,7 @@ object RegexValueExtractor {
      * Parameters will be iterated from left to right: '{p0|p1|p2}' until a value is found
      * @throws ParameterNotFoundException if parameter value is null
      */
-    private fun replaceNextParameter(
+    private fun recursivelyInterpolateString(
         template: String,
         parameterStart: Int,
         groups: MatchGroupCollection,
@@ -139,7 +139,7 @@ object RegexValueExtractor {
         groups: MatchGroupCollection,
         // Check if user has provided value for this parameter, will use that if not null
         process: (parameter: String, value: String?) -> String?,
-        // Callback to replaceNextParameter() so it can actually replace the value
+        // Callback to recursivelyInterpolateString() so it can actually replace the value
         callback: (parameter: String, value: String?) -> String?
     ): String? {
         val undefinedParameters = mutableListOf<String>()
